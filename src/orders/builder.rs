@@ -93,20 +93,34 @@ impl OrderBuilder {
     /// Calculate order amounts for a market order
     fn get_market_order_amounts(
         &self,
+        side: Side,
         amount: Decimal,
         price: Decimal,
         round_config: &super::rounding::RoundConfig,
     ) -> (u32, u32) {
-        let raw_maker_amt = amount.round_dp_with_strategy(round_config.size, ToZero);
         let raw_price = price.round_dp_with_strategy(round_config.price, MidpointTowardZero);
 
-        let raw_taker_amt = raw_maker_amt / raw_price;
-        let raw_taker_amt = fix_amount_rounding(raw_taker_amt, round_config);
+        match side {
+            Side::Buy => {
+                let raw_taker_amt = amount.round_dp_with_strategy(round_config.size, ToZero);
+                let raw_maker_amt = raw_taker_amt * raw_price;
+                let raw_maker_amt = fix_amount_rounding(raw_maker_amt, round_config);
+                (
+                    decimal_to_token_u32(raw_maker_amt),
+                    decimal_to_token_u32(raw_taker_amt),
+                )
+            }
+            Side::Sell => {
+                let raw_maker_amt = amount.round_dp_with_strategy(round_config.size, ToZero);
+                let raw_taker_amt = raw_maker_amt * raw_price;
+                let raw_taker_amt = fix_amount_rounding(raw_taker_amt, round_config);
 
-        (
-            decimal_to_token_u32(raw_maker_amt),
-            decimal_to_token_u32(raw_taker_amt),
-        )
+                (
+                    decimal_to_token_u32(raw_maker_amt),
+                    decimal_to_token_u32(raw_taker_amt),
+                )
+            }
+        }
     }
 
     /// Calculate the price for a market order based on order book depth
@@ -157,7 +171,7 @@ impl OrderBuilder {
             .ok_or_else(|| Error::InvalidParameter(format!("Invalid tick_size: {}", tick_size)))?;
 
         let (maker_amount, taker_amount) =
-            self.get_market_order_amounts(order_args.amount, price, round_config);
+            self.get_market_order_amounts(order_args.side, order_args.amount, price, round_config);
 
         let contract_config = get_contract_config(chain_id, neg_risk)?;
 
@@ -166,7 +180,7 @@ impl OrderBuilder {
 
         self.build_signed_order(
             order_args.token_id.clone(),
-            Side::Buy, // Market orders are always BUY side
+            order_args.side,
             chain_id,
             exchange_address,
             maker_amount,

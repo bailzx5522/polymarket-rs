@@ -4,7 +4,8 @@ use crate::orders::OrderBuilder;
 use crate::signing::EthSigner;
 use crate::types::{
     ApiCreds, CreateOrderOptions, ExtraOrderArgs, MarketOrderArgs, OpenOrder, OpenOrderParams,
-    OrderArgs, OrderBookSummary, OrderId, OrderType, PostOrder, SignedOrderRequest, TradeParams,
+    OpenOrdersResponse, OrderArgs, OrderBookSummary, OrderId, OrderType, PostOrder, Side,
+    SignedOrderRequest, TradeParams,
 };
 
 /// Client for trading operations
@@ -69,7 +70,7 @@ impl TradingClient {
     /// Create a market order (local operation, not posted)
     ///
     /// # Arguments
-    /// * `order_args` - Market order arguments (token_id, amount)
+    /// * `order_args` - Market order arguments (token_id, amount, side)
     /// * `order_book` - The order book to calculate price from
     /// * `extras` - Optional extra order parameters (defaults to ExtraOrderArgs::default())
     /// * `options` - Order options (tick_size, neg_risk must be provided)
@@ -83,10 +84,16 @@ impl TradingClient {
         let default_extras = ExtraOrderArgs::default();
         let extras = extras.unwrap_or(&default_extras);
 
+        // Use asks for BUY (taking from sellers), bids for SELL (taking from buyers)
+        let book_side = match order_args.side {
+            Side::Buy => &order_book.asks,
+            Side::Sell => &order_book.bids,
+        };
+
         // Calculate market price from order book
         let price = self
             .order_builder
-            .calculate_market_price(&order_book.asks, order_args.amount)?;
+            .calculate_market_price(book_side, order_args.amount)?;
 
         self.order_builder
             .create_market_order(self.chain_id, order_args, price, extras, options)
@@ -143,13 +150,21 @@ impl TradingClient {
     ///
     /// # Arguments
     /// * `params` - Query parameters to filter orders
-    pub async fn get_orders(&self, params: OpenOrderParams) -> Result<Vec<OpenOrder>> {
+    pub async fn get_orders(&self, params: OpenOrderParams) -> Result<OpenOrdersResponse> {
+        // IMPORTANT: Sign the base path WITHOUT query parameters
+        // Query parameters are added to the URL after signing
+        let base_path = "/data/orders";
+        let headers =
+            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", base_path, None)?;
+
+        // Build the full request path WITH query parameters
         let query_params = params.to_query_params();
-        let path = if query_params.is_empty() {
-            "/data/orders".to_string()
+        let request_path = if query_params.is_empty() {
+            base_path.to_string()
         } else {
             format!(
-                "/data/orders?{}",
+                "{}?{}",
+                base_path,
                 query_params
                     .iter()
                     .map(|(k, v)| format!("{}={}", k, v))
@@ -158,9 +173,7 @@ impl TradingClient {
             )
         };
 
-        let headers =
-            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", &path, None)?;
-        self.http_client.get(&path, Some(headers)).await
+        self.http_client.get(&request_path, Some(headers)).await
     }
 
     /// Get a specific order by ID
@@ -184,7 +197,9 @@ impl TradingClient {
             "/order",
             Some(&body),
         )?;
-        self.http_client.delete("/order", Some(headers)).await
+        self.http_client
+            .delete_with_body("/order", &body, Some(headers))
+            .await
     }
 
     /// Cancel multiple orders
@@ -201,7 +216,9 @@ impl TradingClient {
             "/orders",
             Some(&body),
         )?;
-        self.http_client.delete("/orders", Some(headers)).await
+        self.http_client
+            .delete_with_body("/orders", &body, Some(headers))
+            .await
     }
 
     /// Cancel all orders
@@ -214,15 +231,27 @@ impl TradingClient {
             "/cancel-all",
             Some(&body),
         )?;
-        self.http_client.delete("/cancel-all", Some(headers)).await
+        self.http_client
+            .delete_with_body("/cancel-all", &body, Some(headers))
+            .await
     }
 
-    /// Cancel all orders for a specific market
+    /// Cancel all orders for a specific market and/or asset
     ///
     /// # Arguments
-    /// * `market` - The market to cancel orders for
-    pub async fn cancel_market_orders(&self, market: &str) -> Result<serde_json::Value> {
-        let body = serde_json::json!({ "market": market });
+    /// * `market` - Optional market to cancel orders for (None = empty string)
+    /// * `asset_id` - Optional asset ID to cancel orders for (None = empty string)
+    pub async fn cancel_market_orders(
+        &self,
+        market: Option<&str>,
+        asset_id: Option<&str>,
+    ) -> Result<serde_json::Value> {
+        // Python SDK always sends both fields, defaulting to empty strings
+        let body = serde_json::json!({
+            "market": market.unwrap_or(""),
+            "asset_id": asset_id.unwrap_or("")
+        });
+
         let headers = create_l2_headers(
             &self.signer,
             &self.api_creds,
@@ -231,7 +260,7 @@ impl TradingClient {
             Some(&body),
         )?;
         self.http_client
-            .delete("/cancel-market-orders", Some(headers))
+            .delete_with_body("/cancel-market-orders", &body, Some(headers))
             .await
     }
 
@@ -240,12 +269,19 @@ impl TradingClient {
     /// # Arguments
     /// * `params` - Query parameters to filter trades
     pub async fn get_trades(&self, params: TradeParams) -> Result<serde_json::Value> {
+        // IMPORTANT: Sign the base path WITHOUT query parameters
+        let base_path = "/data/trades";
+        let headers =
+            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", base_path, None)?;
+
+        // Build the full request path WITH query parameters
         let query_params = params.to_query_params();
-        let path = if query_params.is_empty() {
-            "/data/trades".to_string()
+        let request_path = if query_params.is_empty() {
+            base_path.to_string()
         } else {
             format!(
-                "/data/trades?{}",
+                "{}?{}",
+                base_path,
                 query_params
                     .iter()
                     .map(|(k, v)| format!("{}={}", k, v))
@@ -254,17 +290,20 @@ impl TradingClient {
             )
         };
 
-        let headers =
-            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", &path, None)?;
-        self.http_client.get(&path, Some(headers)).await
+        self.http_client.get(&request_path, Some(headers)).await
     }
 
     /// Check if an order is scoring
     pub async fn is_order_scoring(&self, order_id: &OrderId) -> Result<serde_json::Value> {
-        let path = format!("/order-scoring?id={}", order_id.as_str());
+        // IMPORTANT: Sign the base path WITHOUT query parameters
+        let base_path = "/order-scoring";
         let headers =
-            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", &path, None)?;
-        self.http_client.get(&path, Some(headers)).await
+            create_l2_headers::<_, ()>(&self.signer, &self.api_creds, "GET", base_path, None)?;
+
+        // Build the full request path WITH query parameters
+        let request_path = format!("{}?id={}", base_path, order_id.as_str());
+
+        self.http_client.get(&request_path, Some(headers)).await
     }
 
     /// Check if multiple orders are scoring

@@ -65,7 +65,7 @@ impl HttpClient {
         self.handle_response(response).await
     }
 
-    /// Make a DELETE request
+    /// Make a DELETE request with optional JSON body
     pub async fn delete<T>(
         &self,
         path: &str,
@@ -76,6 +76,30 @@ impl HttpClient {
     {
         let url = format!("{}{}", self.base_url, path);
         let mut request = self.client.delete(&url);
+
+        if let Some(headers) = headers {
+            for (key, value) in headers {
+                request = request.header(key, value);
+            }
+        }
+
+        let response = request.send().await?;
+        self.handle_response(response).await
+    }
+
+    /// Make a DELETE request with JSON body
+    pub async fn delete_with_body<T, B>(
+        &self,
+        path: &str,
+        body: &B,
+        headers: Option<HashMap<&str, String>>,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+        B: Serialize,
+    {
+        let url = format!("{}{}", self.base_url, path);
+        let mut request = self.client.delete(&url).json(body);
 
         if let Some(headers) = headers {
             for (key, value) in headers {

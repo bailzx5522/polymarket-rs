@@ -119,12 +119,18 @@ impl AuthenticatedClient {
             .as_ref()
             .ok_or_else(|| Error::AuthRequired("API credentials required".to_string()))?;
 
+        // IMPORTANT: Sign the base path WITHOUT query parameters
+        let base_path = "/balance-allowance";
+        let headers = create_l2_headers::<_, ()>(&self.signer, api_creds, "GET", base_path, None)?;
+
+        // Build the full request path WITH query parameters
         let query_params = params.to_query_params();
-        let path = if query_params.is_empty() {
-            "/balance-allowance".to_string()
+        let request_path = if query_params.is_empty() {
+            base_path.to_string()
         } else {
             format!(
-                "/balance-allowance?{}",
+                "{}?{}",
+                base_path,
                 query_params
                     .iter()
                     .map(|(k, v)| format!("{}={}", k, v))
@@ -133,8 +139,7 @@ impl AuthenticatedClient {
             )
         };
 
-        let headers = create_l2_headers::<_, ()>(&self.signer, api_creds, "GET", &path, None)?;
-        self.http_client.get(&path, Some(headers)).await
+        self.http_client.get(&request_path, Some(headers)).await
     }
 
     /// Update balance allowance (L2 authentication required)
@@ -184,7 +189,7 @@ impl AuthenticatedClient {
             Some(&body),
         )?;
         self.http_client
-            .delete("/notifications", Some(headers))
+            .delete_with_body("/notifications", &body, Some(headers))
             .await
     }
 

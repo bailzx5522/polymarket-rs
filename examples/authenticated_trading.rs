@@ -46,12 +46,12 @@ async fn main() -> Result<()> {
     // Step 3: Get existing orders
     println!("\n3. Fetching existing orders...");
     let orders = trading_client.get_orders(Default::default()).await?;
-    println!("Found {} open orders", orders.len());
+    println!("Found {} open orders", orders.data.len());
 
-    for order in orders.iter().take(5) {
+    for order in orders.data.iter().take(5) {
         println!(
             "  Order {}: {:?} {} @ {}",
-            order.id, order.side, order.original_size, order.price
+            order.asset_id, order.side, order.original_size, order.price
         );
     }
 
@@ -88,8 +88,18 @@ async fn main() -> Result<()> {
 
     println!("Order creation example completed (not posted)");
 
-    // Step 5: Get trade history
-    println!("\n5. Fetching trade history...");
+    // Step 5: Cancel market orders (example - NOT executed)
+    println!("\n5. Cancel market orders example...");
+    // Uncomment to cancel orders for a specific market:
+    // let result = trading_client.cancel_market_orders(Some("0xaaa"), None).await?;
+    // Or cancel by asset_id:
+    // let result = trading_client.cancel_market_orders(None, Some("100")).await?;
+    // Or both:
+    // let result = trading_client.cancel_market_orders(Some("0xaaa"), Some("100")).await?;
+    println!("Cancel market orders example completed (not executed)");
+
+    // Step 6: Get trade history
+    println!("\n6. Fetching trade history...");
     let trades = trading_client.get_trades(Default::default()).await?;
     println!("Trade history: {:?}", trades);
 

@@ -2,9 +2,9 @@ use crate::error::Result;
 use crate::http::HttpClient;
 use crate::request::PaginationParams;
 use crate::types::{
-    BookParams, ConditionId, MarketsResponse, MidpointResponse, NegRiskResponse, OrderBookSummary,
-    PriceHistoryResponse, PriceResponse, SimplifiedMarketsResponse, SpreadResponse,
-    TickSizeResponse, TokenId,
+    BookParams, ConditionId, Market, MarketsResponse, MidpointResponse, NegRiskResponse,
+    OrderBookSummary, PriceHistoryResponse, PriceResponse, SimplifiedMarketsResponse,
+    SpreadResponse, TickSizeResponse, TokenId,
 };
 use crate::Side;
 
@@ -236,7 +236,7 @@ impl PublicClient {
     }
 
     /// Get a specific market by condition ID
-    pub async fn get_market(&self, condition_id: &ConditionId) -> Result<serde_json::Value> {
+    pub async fn get_market(&self, condition_id: &ConditionId) -> Result<Market> {
         let path = format!("/markets/{}", condition_id.as_str());
         self.http_client.get(&path, None).await
     }
