@@ -102,7 +102,7 @@ impl TradingClient {
         order: SignedOrderRequest,
         order_type: OrderType,
     ) -> Result<serde_json::Value> {
-        let owner = self.signer.address().to_checksum(None);
+        let owner = self.api_creds.api_key.clone();
         let post_order = PostOrder::new(order, owner, order_type);
 
         let headers = create_l2_headers(

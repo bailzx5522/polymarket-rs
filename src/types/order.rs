@@ -105,23 +105,19 @@ impl CreateOrderOptions {
 
 /// Signed order request ready to be posted
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SignedOrderRequest {
-    pub salt: U256,
+    pub salt: u64,
     pub maker: String,
     pub signer: String,
     pub taker: String,
-    #[serde(rename = "tokenId")]
     pub token_id: String,
-    #[serde(rename = "makerAmount")]
     pub maker_amount: String,
-    #[serde(rename = "takerAmount")]
     pub taker_amount: String,
     pub expiration: String,
     pub nonce: String,
-    #[serde(rename = "feeRateBps")]
     pub fee_rate_bps: String,
-    pub side: Side,
-    #[serde(rename = "signatureType")]
+    pub side: String,
     pub signature_type: u8,
     pub signature: String,
 }

@@ -27,6 +27,14 @@ impl Side {
         }
     }
 
+    /// Convert side to string ("BUY" or "SELL")
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Side::Buy => "BUY",
+            Side::Sell => "SELL",
+        }
+    }
+
     /// Create side from numeric value
     pub fn from_u8(value: u8) -> Option<Self> {
         match value {

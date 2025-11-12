@@ -84,15 +84,18 @@ impl PublicClient {
     /// * `start_ts` - Optional start timestamp (seconds)
     /// * `end_ts` - Optional end timestamp (seconds)
     /// * `interval` - Optional interval (e.g., "1m", "5m", "1h")
+    /// * `fidelity` - Optional fidelity (the resolution of the data, in minutes)
     pub async fn get_prices_history(
         &self,
         token_id: &TokenId,
+        interval: &str,
         start_ts: Option<u64>,
         end_ts: Option<u64>,
-        interval: &str,
+        fidelity: Option<u64>,
     ) -> Result<PriceHistoryResponse> {
         let mut path = format!("/prices-history?market={}", token_id.as_str());
         path.push_str(&format!("&interval={}", interval));
+        path.push_str(&format!("&fidelity={}", fidelity.unwrap_or(10)));
         if let Some(start) = start_ts {
             path.push_str(&format!("&startTs={}", start));
         }

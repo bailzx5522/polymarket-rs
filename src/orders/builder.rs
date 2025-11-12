@@ -261,7 +261,7 @@ impl OrderBuilder {
         let signature = sign_order_message(&self.signer, order, chain_id, exchange)?;
 
         Ok(SignedOrderRequest {
-            salt: U256::from(seed),
+            salt: seed,
             maker: self.funder.to_checksum(None),
             signer: self.signer.address().to_checksum(None),
             taker: taker_address.to_checksum(None),
@@ -271,7 +271,7 @@ impl OrderBuilder {
             expiration: expiration.to_string(),
             nonce: extras.nonce.to_string(),
             fee_rate_bps: extras.fee_rate_bps.to_string(),
-            side,
+            side: side.as_str().to_string(),
             signature_type: self.sig_type.to_u8(),
             signature,
         })
