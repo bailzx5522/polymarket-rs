@@ -1,11 +1,11 @@
-use polymarket_rs::client::PublicClient;
+use polymarket_rs::client::ClobClient;
 use polymarket_rs::types::TokenId;
 use polymarket_rs::{Result, Side};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Create a public client for market data queries
-    let client = PublicClient::new("https://clob.polymarket.com");
+    // Create a CLOB client for market data queries
+    let client = ClobClient::new("https://clob.polymarket.com");
 
     // Check server status
     println!("Checking server status...");

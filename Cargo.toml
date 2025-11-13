@@ -10,6 +10,8 @@ keywords = ["polymarket", "prediction-markets", "ethereum", "trading"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+
 # Ethereum & Crypto
 alloy-primitives = "0.8.12"
 alloy-sol-types = { version = "0.8.12", features = ["eip712-serde"] }

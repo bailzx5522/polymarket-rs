@@ -19,12 +19,12 @@
 //! ## Quick Start
 //!
 //! ```rust,no_run
-//! use polymarket_rs::client::PublicClient;
+//! use polymarket_rs::client::ClobClient;
 //! use polymarket_rs::types::TokenId;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let client = PublicClient::new("https://clob.polymarket.com");
+//!     let client = ClobClient::new("https://clob.polymarket.com");
 //!
 //!     let token_id = TokenId::new("123456");
 //!     let midpoint = client.get_midpoint(&token_id).await?;
@@ -68,7 +68,7 @@ pub use types::{
 };
 
 // Re-export clients
-pub use client::{AuthenticatedClient, DataClient, PublicClient, TradingClient};
+pub use client::{AuthenticatedClient, ClobClient, DataClient, TradingClient};
 
 // Re-export order builder
 pub use orders::OrderBuilder;

@@ -1,9 +1,9 @@
 mod authenticated;
+mod clob;
 mod data;
-mod public;
 mod trading;
 
 pub use authenticated::AuthenticatedClient;
+pub use clob::ClobClient;
 pub use data::DataClient;
-pub use public::PublicClient;
 pub use trading::TradingClient;

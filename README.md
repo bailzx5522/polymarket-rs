@@ -36,14 +36,23 @@ polymarket-rs = "0.1.0"
 
 ## Quick Start
 
+### Client Types
+
+| Client                | Purpose                                     | Authentication            |
+| --------------------- | ------------------------------------------- | ------------------------- |
+| `ClobClient`          | CLOB market data queries                    | None                      |
+| `AuthenticatedClient` | API key management, account operations      | L1 (EIP-712) or L2 (HMAC) |
+| `TradingClient`       | Order creation, cancellation, trade queries | L2 (HMAC)                 |
+| `DataClient`          | Position and portfolio data                 | None                      |
+
 ### Public Market Data (No Authentication)
 
 ```rust
-use polymarket_rs::{PublicClient, TokenId};
+use polymarket_rs::{ClobClient, TokenId};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = PublicClient::new("https://clob.polymarket.com");
+    let client = ClobClient::new("https://clob.polymarket.com");
 
     let token_id = TokenId::new("21742633143463906290569050155826241533067272736897614950488156847949938836455");
 
@@ -194,19 +203,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 **Key Points for PolyProxy:**
+
 - `signer`: Your EOA private key (delegated signer for API authentication)
 - `funder`: Your proxy wallet address (holds the actual funds)
 - `SignatureType::PolyProxy`: Tells the API to validate the delegation
 - **No manual allowances needed** - the proxy contract manages approvals automatically
-
-### Client Types
-
-| Client                | Purpose                                     | Authentication            |
-| --------------------- | ------------------------------------------- | ------------------------- |
-| `PublicClient`        | Market data queries                         | None                      |
-| `AuthenticatedClient` | API key management, account operations      | L1 (EIP-712) or L2 (HMAC) |
-| `TradingClient`       | Order creation, cancellation, trade queries | L2 (HMAC)                 |
-| `DataClient`          | Position and portfolio data                 | None                      |
 
 ### Environment Setup
 

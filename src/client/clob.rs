@@ -8,16 +8,16 @@ use crate::types::{
 };
 use crate::Side;
 
-/// Client for public market data APIs
+/// Client for CLOB (Central Limit Order Book) market data APIs
 ///
-/// This client provides access to all public market data endpoints
+/// This client provides access to all public CLOB market data endpoints
 /// without requiring authentication.
-pub struct PublicClient {
+pub struct ClobClient {
     http_client: HttpClient,
 }
 
-impl PublicClient {
-    /// Create a new PublicClient
+impl ClobClient {
+    /// Create a new ClobClient
     ///
     /// # Arguments
     /// * `host` - The base URL for the API (e.g., "https://clob.polymarket.com")

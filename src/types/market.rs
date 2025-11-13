@@ -1,3 +1,4 @@
+use chrono::TimeDelta;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +31,20 @@ pub struct Market {
     pub neg_risk: bool,
     pub neg_risk_market_id: String,
     pub neg_risk_request_id: String,
+}
+
+impl Market {
+    /// Returns boolean indicating if the end date is in range of TimeDelta
+    pub fn is_in_end_date_range(&self, time_delta: TimeDelta) -> bool {
+        if let Some(end_date_iso) = &self.end_date_iso {
+            if let Ok(end_date) = chrono::DateTime::parse_from_rfc3339(end_date_iso) {
+                let now = chrono::Utc::now();
+                let target_date = now + time_delta;
+                return end_date <= target_date;
+            }
+        }
+        false
+    }
 }
 
 /// Simplified market information
