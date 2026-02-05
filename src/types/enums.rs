@@ -56,6 +56,9 @@ pub enum OrderType {
     /// Fill or kill
     #[serde(rename = "FOK")]
     Fok,
+    /// Fill or kill
+    #[serde(rename = "FAK")]
+    Fak,
     /// Good till date
     #[serde(rename = "GTD")]
     Gtd,

@@ -3,9 +3,9 @@ use crate::http::{create_l2_headers, HttpClient};
 use crate::orders::OrderBuilder;
 use crate::signing::EthSigner;
 use crate::types::{
-    ApiCreds, CancelOrdersResponse, CreateOrderOptions, ExtraOrderArgs, MarketOrderArgs,
-    OpenOrder, OpenOrderParams, OpenOrdersResponse, OrderArgs, OrderBookSummary, OrderId,
-    OrderType, PostOrder, PostOrderResponse, Side, SignedOrderRequest, TradeParams,
+    ApiCreds, CancelOrdersResponse, CreateOrderOptions, ExtraOrderArgs, MarketOrderArgs, OpenOrder,
+    OpenOrderParams, OpenOrdersResponse, OrderArgs, OrderBookSummary, OrderId, OrderType,
+    PostOrder, PostOrderArgs, PostOrderResponse, Side, SignedOrderRequest, TradeParams,
 };
 
 /// Client for trading operations
@@ -108,9 +108,10 @@ impl TradingClient {
         &self,
         order: SignedOrderRequest,
         order_type: OrderType,
+        post_only: bool,
     ) -> Result<PostOrderResponse> {
         let owner = self.api_creds.api_key.clone();
-        let post_order = PostOrder::new(order, owner, order_type);
+        let post_order = PostOrder::new(order, owner, order_type, post_only);
 
         let headers = create_l2_headers(
             &self.signer,
@@ -124,6 +125,51 @@ impl TradingClient {
             .await
     }
 
+    /// Post multiple orders to the exchange
+    ///
+    /// # Arguments
+    /// * `orders` - Slice of order arguments with their types
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use polymarket_rs::client::TradingClient;
+    /// # use polymarket_rs::types::{PostOrderArgs, OrderType};
+    /// # async fn example(trading_client: &TradingClient, order1: polymarket_rs::types::SignedOrderRequest, order2: polymarket_rs::types::SignedOrderRequest) -> polymarket_rs::Result<()> {
+    /// let results = trading_client.post_orders(&[
+    ///     PostOrderArgs::new(order1, OrderType::Gtc),
+    ///     PostOrderArgs::new(order2, OrderType::Gtc),
+    /// ]).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn post_orders(&self, orders: &[PostOrderArgs]) -> Result<Vec<PostOrderResponse>> {
+        let owner = self.api_creds.api_key.clone();
+
+        // Build array of PostOrder structs
+        let post_orders: Vec<PostOrder> = orders
+            .iter()
+            .map(|arg| {
+                PostOrder::new(
+                    arg.order.clone(),
+                    owner.clone(),
+                    arg.order_type,
+                    arg.post_only,
+                )
+            })
+            .collect();
+
+        let headers = create_l2_headers(
+            &self.signer,
+            &self.api_creds,
+            "POST",
+            "/orders",
+            Some(&post_orders),
+        )?;
+
+        self.http_client
+            .post("/orders", &post_orders, Some(headers))
+            .await
+    }
     /// Create and post an order in one step
     ///
     /// This is a convenience method that combines create_order and post_order.
@@ -141,9 +187,10 @@ impl TradingClient {
         extras: Option<&ExtraOrderArgs>,
         options: CreateOrderOptions,
         order_type: OrderType,
+        post_only: bool,
     ) -> Result<PostOrderResponse> {
         let order = self.create_order(order_args, expiration, extras, options)?;
-        self.post_order(order, order_type).await
+        self.post_order(order, order_type, post_only).await
     }
 
     /// Get open orders (L2 authentication required)

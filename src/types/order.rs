@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::OrderId;
 
 use super::enums::{OrderType, Side};
@@ -133,14 +135,21 @@ pub struct PostOrder {
     order: SignedOrderRequest,
     owner: String,
     order_type: OrderType,
+    post_only: bool,
 }
 
 impl PostOrder {
-    pub fn new(order: SignedOrderRequest, owner: String, order_type: OrderType) -> Self {
+    pub fn new(
+        order: SignedOrderRequest,
+        owner: String,
+        order_type: OrderType,
+        post_only: bool,
+    ) -> Self {
         Self {
             order,
             owner,
             order_type,
+            post_only,
         }
     }
 }
@@ -326,6 +335,24 @@ pub struct PostOrderResponse {
     pub success: bool,
 }
 
+/// Arguments for posting multiple orders
+#[derive(Debug, Clone)]
+pub struct PostOrderArgs {
+    pub order: SignedOrderRequest,
+    pub order_type: OrderType,
+    pub post_only: bool,
+}
+
+impl PostOrderArgs {
+    pub fn new(order: SignedOrderRequest, order_type: OrderType, post_only: bool) -> Self {
+        Self {
+            order,
+            order_type,
+            post_only,
+        }
+    }
+}
+
 /// Response from canceling orders
 ///
 /// This response is returned by:
@@ -336,5 +363,5 @@ pub struct PostOrderResponse {
 #[derive(Debug, Deserialize)]
 pub struct CancelOrdersResponse {
     pub canceled: Vec<OrderId>,
-    pub not_canceled: serde_json::Value,
+    pub not_canceled: HashMap<String, String>,
 }
