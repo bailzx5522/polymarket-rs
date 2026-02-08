@@ -56,19 +56,26 @@ pub fn decimal_to_token_u32(amt: Decimal) -> u32 {
     if amt.scale() > 0 {
         amt = amt.round_dp_with_strategy(0, MidpointTowardZero);
     }
-    amt.try_into()
-        .expect("Couldn't round decimal to integer")
+    amt.try_into().expect("Couldn't round decimal to integer")
 }
 
 /// Fix amount rounding to ensure proper precision
-pub fn fix_amount_rounding(mut amt: Decimal, round_config: &RoundConfig) -> Decimal {
-    if amt.scale() > round_config.amount {
-        amt = amt.round_dp_with_strategy(round_config.amount + 4, AwayFromZero);
-        if amt.scale() > round_config.amount {
-            amt = amt.round_dp_with_strategy(round_config.amount, ToZero);
-        }
+pub fn fix_amount_rounding(
+    mut amt: Decimal,
+    round_config: &RoundConfig,
+    is_maker: bool,
+) -> Decimal {
+    // if amt.scale() > round_config.amount {
+    //     amt = amt.round_dp_with_strategy(round_config.amount + 4, AwayFromZero);
+    //     if amt.scale() > round_config.amount {
+    //         amt = amt.round_dp_with_strategy(round_config.amount, ToZero);
+    //     }
+    // }
+    if is_maker {
+        amt.round_dp_with_strategy(2, ToZero)
+    } else {
+        amt.round_dp_with_strategy(4, ToZero)
     }
-    amt
 }
 
 #[cfg(test)]
@@ -87,5 +94,31 @@ mod tests {
     fn test_decimal_to_token() {
         let result = decimal_to_token_u32(Decimal::from_str("1.5").unwrap());
         assert_eq!(result, 1_500_000);
+    }
+
+    //    invalid amounts, the market buy orders maker amount supports a max accuracy of 2 decimals, taker amount a max of 4 decimals
+    #[test]
+    fn test_amount_rounding() {
+        let result = fix_amount_rounding(
+            Decimal::from_str("1.234").unwrap(),
+            &RoundConfig {
+                price: 2,
+                size: 2,
+                amount: 4,
+            },
+            true,
+        );
+        assert_eq!(result, Decimal::from_str("1.23").unwrap());
+
+        let result = fix_amount_rounding(
+            Decimal::from_str("1.234").unwrap(),
+            &RoundConfig {
+                price: 2,
+                size: 2,
+                amount: 2,
+            },
+            false,
+        );
+        assert_eq!(result, Decimal::from_str("1.234").unwrap());
     }
 }
