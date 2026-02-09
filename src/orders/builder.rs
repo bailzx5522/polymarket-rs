@@ -8,6 +8,7 @@ use crate::types::{
 };
 use crate::utils::get_current_unix_time_secs;
 use alloy_primitives::{Address, U256};
+use log::info;
 use rand::{thread_rng, Rng};
 use rust_decimal::Decimal;
 use rust_decimal::RoundingStrategy::{MidpointTowardZero, ToZero};
@@ -72,6 +73,8 @@ impl OrderBuilder {
                 let raw_taker_amt = size.round_dp_with_strategy(round_config.size, ToZero);
                 let raw_maker_amt = raw_taker_amt * raw_price;
                 let raw_maker_amt = fix_amount_rounding(raw_maker_amt, round_config, true);
+                info!("-------------------- {raw_taker_amt},{raw_maker_amt}");
+                println!("buy-------------------- {raw_taker_amt},{raw_maker_amt}");
                 (
                     decimal_to_token_u32(raw_maker_amt),
                     decimal_to_token_u32(raw_taker_amt),
@@ -81,6 +84,7 @@ impl OrderBuilder {
                 let raw_maker_amt = size.round_dp_with_strategy(round_config.size, ToZero);
                 let raw_taker_amt = raw_maker_amt * raw_price;
                 let raw_taker_amt = fix_amount_rounding(raw_taker_amt, round_config, false);
+                println!("sell-------------------- {raw_taker_amt},{raw_maker_amt}");
                 // println!("------------------- calc");
                 // println!("size:{}->{}", size, raw_maker_amt);
                 // println!("amt:{}->{},->{}", raw_maker_amt, raw_price, raw_taker_amt);

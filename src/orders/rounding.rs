@@ -65,17 +65,14 @@ pub fn fix_amount_rounding(
     round_config: &RoundConfig,
     is_maker: bool,
 ) -> Decimal {
-    // if amt.scale() > round_config.amount {
-    //     amt = amt.round_dp_with_strategy(round_config.amount + 4, AwayFromZero);
-    //     if amt.scale() > round_config.amount {
-    //         amt = amt.round_dp_with_strategy(round_config.amount, ToZero);
-    //     }
-    // }
-    if is_maker {
-        amt.round_dp_with_strategy(2, ToZero)
-    } else {
-        amt.round_dp_with_strategy(4, ToZero)
+    let target_precision = if is_maker { 2 } else { 4 };
+    if amt.scale() > target_precision {
+        amt = amt.round_dp_with_strategy(target_precision + 4, AwayFromZero);
+        if amt.scale() > target_precision {
+            amt = amt.round_dp_with_strategy(target_precision, ToZero);
+        }
     }
+    amt
 }
 
 #[cfg(test)]

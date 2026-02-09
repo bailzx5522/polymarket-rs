@@ -43,16 +43,16 @@ async fn main() -> Result<()> {
     );
 
     // Step 3: Get existing orders
-    println!("\n3. Fetching existing orders...");
-    let orders = trading_client.get_orders(Default::default()).await?;
-    println!("Found {} open orders", orders.data.len());
+    // println!("\n3. Fetching existing orders...");
+    // let orders = trading_client.get_orders(Default::default()).await?;
+    // println!("Found {} open orders", orders.data.len());
 
-    for order in orders.data.iter().take(5) {
-        println!(
-            "  Order {}: {:?} {} @ {}",
-            order.asset_id, order.side, order.original_size, order.price
-        );
-    }
+    // for order in orders.data.iter().take(5) {
+    //     println!(
+    //         "  Order {}: {:?} {} @ {}",
+    //         order.asset_id, order.side, order.original_size, order.price
+    //     );
+    // }
 
     // Step 4: Create a limit order (example - NOT posted)
     println!("\n4. Creating a limit order (example)...");
@@ -61,9 +61,9 @@ async fn main() -> Result<()> {
 
     let _order_args = OrderArgs::new(
         token_id,
-        Decimal::from_str("0.50").unwrap(), // price
-        Decimal::from_str("10.0").unwrap(), // size
-        Side::Buy,
+        Decimal::from_str("0.40").unwrap(),    // price
+        Decimal::from_str("5.12341").unwrap(), // size
+        Side::Sell,
     );
 
     let _options = CreateOrderOptions::default()
@@ -72,14 +72,14 @@ async fn main() -> Result<()> {
 
     // Note: This creates the order but doesn't post it
     // Uncomment the following to actually post:
-    // let signed_order = trading_client.create_order(
-    //     &_order_args,
-    //     None,      // expiration (defaults to 0 = no expiration)
-    //     None,      // extras (defaults to ExtraOrderArgs::default())
-    //     _options,
-    // )?;
+    let signed_order = trading_client.create_order(
+        &_order_args,
+        None, // expiration (defaults to 0 = no expiration)
+        None, // extras (defaults to ExtraOrderArgs::default())
+        _options,
+    )?;
     //
-    // println!("Created signed order with salt: {}", signed_order.salt);
+    println!("Created signed order with salt: {}", signed_order.salt);
     //
     // // Post the order
     // let result = trading_client.post_order(signed_order, OrderType::Gtc).await?;
